@@ -889,7 +889,7 @@ input[type="text"], input[type="tel"] {
       </div>
       <div class="devtools__group devtools__group--codes">
         <div class="devtools__label">\u0414\u0435\u043C\u043E-\u043A\u043E\u0434\u0438 (\u0434\u043B\u044F \u0432\u0432\u0435\u0434\u0435\u043D\u043D\u044F \u043D\u0430 home)</div>
-        765432 (\u043F\u0435\u0440\u0448\u0438\u0439 \u043A\u043B\u0430\u0441) \xB7 111222 (\u0441\u0435\u0440\u0435\u0434\u043D\u0456\u0439 \u043A\u043B\u0430\u0441) \xB7 999888 (\u0433\u0440\u0430\u043D\u0434-\u043F\u0443\u043B) \xB7 555666 (\u043F\u0440\u043E\u0433\u0440\u0430\u0448) \xB7 123456 (\u043D\u0435\u0432\u0430\u043B\u0456\u0434\u043D\u0438\u0439)
+        FST101-103 (\u043F\u0435\u0440\u0448\u0438\u0439 \u043A\u043B\u0430\u0441) \xB7 MID001-006 (\u0441\u0435\u0440\u0435\u0434\u043D\u0456\u0439 \u043A\u043B\u0430\u0441) \xB7 GRD201-203 (\u0433\u0440\u0430\u043D\u0434-\u043F\u0443\u043B) \xB7 LSE001-005 (\u043F\u0440\u043E\u0433\u0440\u0430\u0448) \xB7 ZZZ999 (\u043D\u0435\u0432\u0430\u043B\u0456\u0434\u043D\u0438\u0439)
       </div>
     </div>
   `;
@@ -1183,24 +1183,41 @@ input[type="text"], input[type="tel"] {
       },
       // Demo code inventory (6 символів, цифри + латинські літери — див.
       // codeInput.js). В production — імпорт з 450 000-рядкового Excel/CSV.
+      // Це ЗГЕНЕРОВАНІ тестові коди для передачі клієнту на тестування
+      // (список і призначення кожного — Тестові_коди.md в корені проєкту).
+      // НЕ реальні промокоди з бази Biscotti — реальні коди у прототип
+      // (публічний GitHub Pages) свідомо не завантажуються, щоб їх ніхто не
+      // зміг "виграти" достроково, підглянувши код сторінки.
       codes: {
-        "765432": { status: "unused", prizeTier: "first" },
-        "111222": { status: "unused", prizeTier: "mid" },
-        "999888": { status: "unused", prizeTier: "grand" },
-        "555666": { status: "unused", prizeTier: null },
-        // валідний, без призу
-        // '123456' навмисно відсутній у базі — приклад невалідного коду.
-        // Додаткові валідні коди БЕЗ призу (555601-555606) — потрібні лише
-        // для того, щоб можна було реально перевірити ліміт "10 різних
-        // дійсних кодів за 24 години" (Правила, п. 5.5): лічильник рахує
-        // ДІЙСНІ коди, а не спроби, тому з попередніх чотирьох досягти 10
-        // фізично неможливо (кожен реєструється лише один раз).
-        "555601": { status: "unused", prizeTier: null },
-        "555602": { status: "unused", prizeTier: null },
-        "555603": { status: "unused", prizeTier: null },
-        "555604": { status: "unused", prizeTier: null },
-        "555605": { status: "unused", prizeTier: null },
-        "555606": { status: "unused", prizeTier: null }
+        // Перший клас — миттєвий виграш BISCOTTI-BOX, 3 коди.
+        "FST101": { status: "unused", prizeTier: "first" },
+        "FST102": { status: "unused", prizeTier: "first" },
+        "FST103": { status: "unused", prizeTier: "first" },
+        // Середній клас — по 2 коди на кожен з 3 товарів. Конкретний товар
+        // обирається детерміновано з коду (pickMidItem/hashCode нижче), тому
+        // ці 6 кодів підібрані так, щоб показати всі три різні товари:
+        // MID001/MID004 → колонка, MID002/MID005 → повербанк,
+        // MID003/MID006 → навушники.
+        "MID001": { status: "unused", prizeTier: "mid" },
+        "MID002": { status: "unused", prizeTier: "mid" },
+        "MID003": { status: "unused", prizeTier: "mid" },
+        "MID004": { status: "unused", prizeTier: "mid" },
+        "MID005": { status: "unused", prizeTier: "mid" },
+        "MID006": { status: "unused", prizeTier: "mid" },
+        // Гранд-приз — 3 коди. Одразу приз не показує (див.
+        // INSTANT_REVEAL_FOR_GRAND_CODES нижче) — код лише потрапляє в пул
+        // фінального розіграшу, перевірити через QA-панель → admin-demo.
+        "GRD201": { status: "unused", prizeTier: "grand" },
+        "GRD202": { status: "unused", prizeTier: "grand" },
+        "GRD203": { status: "unused", prizeTier: "grand" },
+        // Валідні коди без призу ("програш") — декілька штук, щоб було чим
+        // тестувати ліміт спроб і повторне введення того самого коду.
+        "LSE001": { status: "unused", prizeTier: null },
+        "LSE002": { status: "unused", prizeTier: null },
+        "LSE003": { status: "unused", prizeTier: null },
+        "LSE004": { status: "unused", prizeTier: null },
+        "LSE005": { status: "unused", prizeTier: null }
+        // Приклад невалідного коду (навмисно відсутній у базі): 'ZZZ999'.
       },
       // Кожен введений код — один "квиток" на фінальний розіграш гранд-призів
       // (окрім своєї миттєвої категорії first/mid). participatedInDraw=true
@@ -2141,7 +2158,7 @@ input[type="text"], input[type="tel"] {
   }
 
   // js/buildInfo.js
-  var BUILD_TAG = "2026-09-14 18:05";
+  var BUILD_TAG = "2026-09-14 19:10";
 
   // js/screens/profile.js
   function renderProfile(container) {
