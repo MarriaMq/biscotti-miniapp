@@ -428,22 +428,63 @@ input[type="text"], input[type="tel"] {
 }
 
 .code-boxes {
+  position: relative;
   display: flex;
   gap: 8px;
   justify-content: space-between;
 }
+/* .code-box — тепер <div>, не <input> (див. codeInput.js: один спільний
+   прихований input поверх усього ряду замість 6 окремих полів — щоб
+   клавіатура на телефоні монтувалась один раз і не "стрибала"), тому
+   візуальні властивості поля (фон/колір/радіус), які раніше діставались
+   від спільного правила input[type="text"], треба задати тут напряму. */
 .code-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   min-width: 0;
   aspect-ratio: 1;
-  text-align: center;
+  background: var(--color-bg-inverse);
+  color: var(--color-text-on-white);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-base);
   font-size: 22px;
   font-weight: var(--font-weight-bold);
-  padding: 0;
 }
-.code-box:focus {
+.code-box--active {
   outline: 2px solid var(--biscotti-lemon);
   outline-offset: 1px;
+}
+/* Єдине реальне поле вводу — розтягнуте прозоро поверх усього ряду
+   квадратиків, так клік у будь-яке місце ряду відкриває клавіатуру, а сам
+   ряд <div>-ів нижче лише відображає символи. */
+/* Селектор "input.code-hidden-input" (не просто ".code-hidden-input") —
+   навмисно: загальне правило "input[type="text"]" вище має ВИЩУ
+   специфічність за звичайний клас (атрибутний селектор рахується як
+   клас, а тут ще й є селектор тегу "input") і перебивало б прозорий фон
+   своїм білим кольором. "input.code-hidden-input" зрівнює специфічність
+   і виграє за порядком оголошення (нижче у файлі). */
+input.code-hidden-input {
+  /* -webkit-appearance/appearance: none обов'язково — інакше браузер
+     малює нативний фон/рамку інпута ПОВЕРХ прозорого фону з CSS,
+     суцільною білою плашкою на весь .code-boxes (перекриває проміжки
+     між квадратиками, "background: transparent" саме по собі це не
+     прибирає, доки не скинуто нативний вигляд поля). */
+  appearance: none;
+  -webkit-appearance: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px; /* 16px мінімум — щоб Safari не зумив при фокусі на iPhone */
 }
 
 .checkbox-row {
@@ -1702,45 +1743,38 @@ input[type="text"], input[type="tel"] {
   var LENGTH = 6;
   var CODE_CHAR_RE = /[^0-9A-Za-z]/g;
   function sanitize(raw) {
-    return raw.replace(CODE_CHAR_RE, "").toUpperCase();
+    return raw.replace(CODE_CHAR_RE, "").toUpperCase().slice(0, LENGTH);
   }
   function renderCodeInput(container) {
     container.innerHTML = `
     <div class="code-boxes">
-      ${Array.from({ length: LENGTH }, (_, i) => `<input type="text" inputmode="text" maxlength="1" class="code-box" data-i="${i}" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" />`).join("")}
+      ${Array.from({ length: LENGTH }, (_, i) => `<div class="code-box" data-i="${i}"></div>`).join("")}
+      <input type="text" inputmode="text" maxlength="${LENGTH}" class="code-hidden-input" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" />
     </div>
   `;
     const boxes = Array.from(container.querySelectorAll(".code-box"));
-    boxes.forEach((box) => {
-      box.value = "";
-    });
-    boxes.forEach((box, i) => {
-      box.addEventListener("input", () => {
-        box.value = sanitize(box.value).slice(0, 1);
-        if (box.value && boxes[i + 1]) {
-          boxes[i + 1].focus();
-        } else if (box.value) {
-          box.blur();
-        }
+    const hidden = container.querySelector(".code-hidden-input");
+    hidden.value = "";
+    function render2() {
+      const value = sanitize(hidden.value);
+      if (hidden.value !== value) hidden.value = value;
+      const isFocused = document.activeElement === hidden;
+      boxes.forEach((box, i) => {
+        box.textContent = value[i] || "";
+        box.classList.toggle("code-box--active", isFocused && i === value.length);
       });
-      box.addEventListener("keydown", (e) => {
-        if (e.key === "Backspace" && !box.value && boxes[i - 1]) {
-          boxes[i - 1].focus();
-        }
-      });
-      box.addEventListener("paste", (e) => {
-        e.preventDefault();
-        const chars = sanitize((e.clipboardData || window.clipboardData).getData("text")).slice(0, LENGTH);
-        chars.split("").forEach((c, j) => {
-          if (boxes[j]) boxes[j].value = c;
-        });
-        const next = boxes[Math.min(chars.length, LENGTH - 1)];
-        if (next) next.focus();
-      });
-    });
+      if (value.length === LENGTH) {
+        hidden.blur();
+      }
+    }
+    hidden.addEventListener("input", render2);
+    hidden.addEventListener("focus", render2);
+    hidden.addEventListener("blur", render2);
+    boxes.forEach((box) => box.addEventListener("click", () => hidden.focus()));
+    render2();
     return {
-      getValue: () => boxes.map((b) => b.value).join(""),
-      focus: () => boxes[0].focus()
+      getValue: () => sanitize(hidden.value),
+      focus: () => hidden.focus()
     };
   }
 
@@ -1837,7 +1871,7 @@ input[type="text"], input[type="tel"] {
 
   // js/screens/resultLose.js
   var MESSAGES = {
-    invalid: "\u0422\u0430\u043A\u043E\u0433\u043E \u043A\u043E\u0434\u0443 \u043D\u0435 \u0456\u0441\u043D\u0443\u0454. \u041F\u0435\u0440\u0435\u0432\u0456\u0440\u0442\u0435, \u0447\u0438 \u043F\u0440\u0430\u0432\u0438\u043B\u044C\u043D\u043E \u0432\u0432\u0435\u0434\u0435\u043D\u0456 \u0446\u0438\u0444\u0440\u0438.",
+    invalid: "\u0422\u0430\u043A\u043E\u0433\u043E \u043A\u043E\u0434\u0443 \u043D\u0435 \u0456\u0441\u043D\u0443\u0454. \u041F\u0435\u0440\u0435\u0432\u0456\u0440\u0442\u0435, \u0447\u0438 \u043F\u0440\u0430\u0432\u0438\u043B\u044C\u043D\u043E \u0432\u0432\u0435\u0434\u0435\u043D\u043E \u043A\u043E\u0434.",
     already_used: "\u0426\u0435\u0439 \u043A\u043E\u0434 \u0443\u0436\u0435 \u0431\u0443\u0432 \u0432\u0438\u043A\u043E\u0440\u0438\u0441\u0442\u0430\u043D\u0438\u0439 \u0440\u0430\u043D\u0456\u0448\u0435.",
     no_prize: "\u0426\u044C\u043E\u0433\u043E \u0440\u0430\u0437\u0443 \u043D\u0435 \u043F\u043E\u0449\u0430\u0441\u0442\u0438\u043B\u043E \u2014 \u0430\u043B\u0435 \u043A\u043E\u0434 \u0437\u0430\u0440\u0430\u0445\u043E\u0432\u0430\u043D\u043E \u044F\u043A \u0448\u0430\u043D\u0441 \u043D\u0430 \u0433\u0440\u0430\u043D\u0434-\u043F\u0440\u0438\u0437!",
     // Правила акції, п. 5.5: не більше 10 різних дійсних кодів на учасника
@@ -2172,7 +2206,7 @@ input[type="text"], input[type="tel"] {
   }
 
   // js/buildInfo.js
-  var BUILD_TAG = "2026-09-15 18:20";
+  var BUILD_TAG = "2026-09-16 12:00";
 
   // js/screens/profile.js
   function renderProfile(container) {
