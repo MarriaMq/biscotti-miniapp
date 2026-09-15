@@ -484,7 +484,13 @@ input.code-hidden-input {
   background: transparent;
   color: transparent;
   caret-color: transparent;
+  outline: none; /* інакше нативний фокус-контур обводить увесь ряд
+                    (цей інпут розтягнутий на всю ширину .code-boxes) —
+                    підсвітку поточного квадратика дає .code-box--active */
   font-size: 16px; /* 16px мінімум — щоб Safari не зумив при фокусі на iPhone */
+}
+input.code-hidden-input:focus {
+  outline: none;
 }
 
 .checkbox-row {
@@ -2206,7 +2212,7 @@ input.code-hidden-input {
   }
 
   // js/buildInfo.js
-  var BUILD_TAG = "2026-09-16 12:00";
+  var BUILD_TAG = "2026-09-16 13:10";
 
   // js/screens/profile.js
   function renderProfile(container) {
