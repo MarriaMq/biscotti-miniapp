@@ -2101,6 +2101,20 @@ input[type="text"], input[type="tel"] {
     tinInput.addEventListener("input", () => {
       tinInput.value = tinInput.value.replace(/\D/g, "").slice(0, 10);
     });
+    function liveHide(input, errorEl, isValid) {
+      if (!input || !errorEl) return;
+      input.addEventListener("input", () => {
+        if (isValid()) errorEl.hidden = true;
+      });
+    }
+    liveHide(nameInput, nameError, () => isValidFullName(nameInput.value));
+    liveHide(tinInput, tinError, () => isValidTin(tinInput.value));
+    liveHide(cityEl, cityError, () => cityEl.value.trim().length >= 2);
+    liveHide(branchEl, branchError, () => branchEl.value.trim().length >= 2);
+    liveHide(phoneInput, phoneError, () => phoneDigits(phoneInput).length === 9);
+    confirmBox.addEventListener("change", () => {
+      if (confirmBox.checked) confirmError.hidden = true;
+    });
     submitBtn.addEventListener("click", () => {
       const nameValid = isValidFullName(nameInput.value);
       const tinValid = isValidTin(tinInput.value);
@@ -2158,7 +2172,7 @@ input[type="text"], input[type="tel"] {
   }
 
   // js/buildInfo.js
-  var BUILD_TAG = "2026-09-15 17:00";
+  var BUILD_TAG = "2026-09-15 18:20";
 
   // js/screens/profile.js
   function renderProfile(container) {
